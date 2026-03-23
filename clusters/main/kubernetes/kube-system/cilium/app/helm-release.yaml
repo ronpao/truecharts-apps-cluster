@@ -76,7 +76,7 @@ spec:
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
     localRedirectPolicy: true
     operator:
-      repicas: 1
+      replicas: 1
       rollOutPods: true
     rollOutCiliumPods: true
 
