@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   - trim.yaml
   - snapshot-delete.yaml
-  - snapshot-cleanup.yaml
+  - snapshot-cleanup.yaml  - snapshot-clenup.yaml
