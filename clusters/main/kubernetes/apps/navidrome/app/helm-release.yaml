@@ -1,0 +1,72 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: navidrome
+  namespace: navidrome
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: navidrome
+      version: 23.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 15m
+  timeout: 20m
+  maxHistory: 3
+  driftDetection:
+    mode: warn
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    credentials:
+      s3:
+        type: s3
+        url: "${S3_ENDPOINT}"
+        bucket: "${S3_BUCKET}"
+        accessKey: "${S3_ID}"
+        secretKey: "${S3_KEY}"
+        encrKey: "${S3_KEY}"
+    persistence:
+      data:
+        volsync:
+          - name: data
+            type: restic
+            credentials: s3
+            dest:
+             enabled: true
+            src:
+              enabled: true
+      music:
+        type: nfs 
+        path: /mnt/NASCasa/Musica
+        server: "192.168.1.123"
+    ingress:
+      main:
+        enabled: true
+        #ingressClassName: internal
+        ingressClassName: external
+        hosts:
+          - host: "navidrome.${DOMAIN_0}"
+            paths:
+              - path: /
+          #- host: navidrome.cloud.local
+          #  paths:
+          #    - path: /
+        tls:
+          - hosts:
+              - "navidrome.${DOMAIN_0}"
+           #   - navidrome.cloud.local
+        integrations:
+          traefik:
+            enabled: false
