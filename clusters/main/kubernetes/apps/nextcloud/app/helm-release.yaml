@@ -1,0 +1,173 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nextcloud
+  namespace: nextcloud
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: nextcloud
+      version: 43.0.3
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  timeout: 20m
+  values:
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              resources:
+                limits:
+                  memory: 11000Mi
+                requests:
+                  memory: 1000Mi
+    global:
+      stopAll: false
+    cnpg:
+      main:
+        cluster:
+          postgresql:
+              max_slot_wal_keep_size: 5GB
+              wal_compression: lz4
+          instances: 3
+          env:
+            AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+            AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          walStorage:
+            size: "100Gi"
+        #mode: recovery
+        backups:
+          #revision: "1"
+          enabled: true
+          credentials: s3
+        recovery:
+          #revision: "3"
+          credentials: s3
+    nextcloud:
+      php:
+        memory_limit: 10G
+        upload_limit: 100G
+        pm_max_children: 14
+        pm_start_servers: 3
+        pm_min_spare_servers: 3
+        pm_max_spare_servers: 10
+      credentials:
+        initialAdminUser: admin
+        initialAdminPassword: adminpass
+      general:
+        default_phone_region: IT
+        accessIP: ${NGINX_EXTERNAL_IP}
+        #accessIP: ${NGINX_INTERNAL_IP}
+    
+      clamav:
+        enabled: true
+        stream_max_length: 26214400
+        file_max_size: -1
+        infected_action: only_log
+      # Notify Push (Allows Nextcloud to notify clients of changes, instead of clients having to poll. A Notify Push container will be deployed automatically). This is highly recommended to keep enabled.
+      notify_push:
+        enabled: true
+      # Collabora (document editor for Nextcloud. A Collabora container will be deployed automatically.
+      collabora:
+        enabled: true
+        # default|compact|tabbed
+        interface_mode: default
+        username: admin
+        password: changeme
+        dictionaries:
+          - de_DE
+          - en_GB
+          - en_US
+          - el_GR
+          - es_ES
+          - fr_FR
+          - pt_BR
+          - pt_PT
+          - it
+          - nl
+          - ru
+      # Only Office (document editor for Nextcloud, this does **NOT** deploy the Only Office container. You will need to have a separate installation.
+      onlyoffice:
+        enabled: false
+        url: ""
+        internal_url: ""
+        verify_ssl: true
+        jwt: ""
+        jwt_header: Authorization
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: external
+        hosts:
+          - host: "nextcloud.${DOMAIN_0}"
+            paths:
+              - path: /
+          #- host: nextcloud.cloud.local
+          #  paths:
+          #    - path: /
+        tls:
+          - hosts:
+              - "nextcloud.${DOMAIN_0}"
+            #  - nextcloud.cloud.local
+    credentials:
+      s3:
+        type: s3
+        url: "${S3_ENDPOINT}"
+        bucket: "${S3_BUCKET}"
+        accessKey: "${S3_ID}"
+        secretKey: "${S3_KEY}"
+        encrKey: "${S3_KEY}"
+    persistence:
+      html:
+        volsync:
+          - name: html
+            type: restic
+            credentials: s3
+            dest:
+             enabled: true
+            src:
+              enabled: true
+      config:
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+             enabled: true
+            src:
+              enabled: true
+      data:
+        type: nfs
+        path: /mnt/NASCasa/Nextcloud-users-data
+        server: "192.168.1.123"
+        targetSelector:
+          main:
+            main:
+              mountPath: /var/www/html/data
+            init-perms:
+              mountPath: /var/www/html/data
+          nextcloud-cron:
+            nextcloud-cron:
+              mountPath: /var/www/html/data
+          preview-cron:
+            preview-cron:
+              mountPath: /var/www/html/data
+          nginx:
+            nginx:
+              mountPath: /var/www/html/data
+              readOnly: true
