@@ -5,3 +5,4 @@ resources:
   - renovate/ks.yaml
   - cloudflared/ks.yaml
   #- navidrome/ks.yaml
+  - wordpress/ks.yaml
