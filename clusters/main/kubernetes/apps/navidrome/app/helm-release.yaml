@@ -45,8 +45,8 @@ spec:
             credentials: s3
             dest:
               enabled: true
-#            src:
-#              enabled: true
+            src:
+              enabled: true
       music:
         type: nfs 
         path: /mnt/NASCasa/Musica
