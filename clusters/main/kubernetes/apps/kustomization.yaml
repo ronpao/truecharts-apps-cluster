@@ -4,5 +4,5 @@ resources:
   - kubernetes-dashboard/ks.yaml
   - renovate/ks.yaml
   - cloudflared/ks.yaml
-  - navidrome/ks.yaml
-  - wordpress/ks.yaml
+  #- navidrome/ks.yaml
+  #- wordpress/ks.yaml
